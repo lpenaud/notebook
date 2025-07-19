@@ -10,17 +10,16 @@ name: Deno
 
 on:
   push:
-    branches: ["main"]
-  pull_request:
+    paths:
+      - "**.ts"
     branches: ["main"]
 
 permissions:
   contents: write
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Setup repo
         uses: actions/checkout@v4
@@ -33,8 +32,24 @@ jobs:
       - name: Extract SVG
         run: deno run --allow-read --allow-write script/extract-svg.ts stats/stats.ipynb dist/
 
-      - name: SVG artifacts
-        uses: actions/upload-artifact@v4
+      - name: Create index
+        run: deno run --allow-read --allow-write script/create-index.ts dist/
+
+      - name: Upload dist
+        id: deployment
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: svg-dist
-          path: dist/*.svg
+          path: |
+            dist/index.html
+            dist/*.svg
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to Github Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      
