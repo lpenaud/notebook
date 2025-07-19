@@ -6,12 +6,10 @@
 # This workflow will install Deno then run `deno lint` and `deno test`.
 # For more information see: https://github.com/denoland/setup-deno
 
-name: Deno
+name: Build and deploy
 
 on:
   push:
-    paths:
-      - "**.ipynb"
     branches: ["main"]
 
 permissions:
@@ -37,8 +35,9 @@ jobs:
 
       - name: Upload dist
         id: deployment
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
+          name: github-pages
           path: |
             dist/index.html
             dist/*.svg
