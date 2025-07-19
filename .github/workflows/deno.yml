@@ -31,7 +31,7 @@ jobs:
           deno-version: lts
 
       - name: Extract SVG
-        run: deno run --allow-read --allow-write scripts/extract-svg.ts stats/stats.ipynb dist/
+        run: deno run --allow-read --allow-write script/extract-svg.ts stats/stats.ipynb dist/
 
       - name: SVG artifacts
         uses: actions/upload-artifact@v4
