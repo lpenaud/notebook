@@ -11,7 +11,7 @@ name: Deno
 on:
   push:
     paths:
-      - "**.ts"
+      - "**.ipynb"
     branches: ["main"]
 
 permissions:
