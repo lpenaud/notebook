@@ -29,20 +29,21 @@ jobs:
         with:
           deno-version: lts
 
+      - name: Create public directory
+        run: mkdir public/
+
       - name: Extract SVG
-        run: deno run --allow-read --allow-write script/extract-svg.ts stats/stats.ipynb dist/
+        run: deno run --allow-read --allow-write script/extract-svg.ts stats/stats.ipynb public/
 
       - name: Create index
-        run: deno run --allow-read --allow-write script/create-index.ts dist/
+        run: deno run --allow-read --allow-write script/create-index.ts public/
 
       - name: Upload dist
         id: deployment
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: github-pages
-          path: |
-            dist/index.html
-            dist/*.svg
+          path: public/
+          
   deploy:
     environment:
       name: github-pages
