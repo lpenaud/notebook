@@ -10,6 +10,8 @@ name: Build and deploy
 
 on:
   push:
+    paths:
+      - "**/*.ipynb"
     branches: ["main"]
 
 permissions:
