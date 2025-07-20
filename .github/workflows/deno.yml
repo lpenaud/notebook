@@ -36,7 +36,9 @@ jobs:
         run: deno run --allow-read --allow-write script/create-index.ts dist/
 
       - name: Tarball
-        run: tar -C dist/ -cfvz dist.tar.gz *.svg index.html
+        run: |
+          cd dist
+          tar --create --file dist.tar.gz --gzip --verbose *.svg index.html
 
       - name: Upload dist
         id: deployment
