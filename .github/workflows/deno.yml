@@ -38,14 +38,14 @@ jobs:
       - name: Tarball
         run: |
           cd dist
-          tar --create --file dist.tar.gz --gzip --verbose *.svg index.html
+          tar --create --file dist.tar --verbose *.svg index.html
 
       - name: Upload dist
         id: deployment
         uses: actions/upload-artifact@v4
         with:
           name: github-pages
-          path: dist/dist.tar.gz
+          path: dist/dist.tar
           
   deploy:
     environment:
