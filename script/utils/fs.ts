@@ -20,6 +20,7 @@ export async function getFiles(
     }
     values.push(stdPath.join(root, name));
   }
+  map.values().forEach(v => v.sort());
   return map;
 }
 
