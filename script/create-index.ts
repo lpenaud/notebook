@@ -44,7 +44,7 @@ async function writeIndex(
 ): Promise<string> {
   let content = openHtml(title);
   content += files
-    .map((p) => liAnchor(p))
+    .map((p) => liAnchor(stdPath.basename(p)))
     .join("");
   content += closeHtml();
   console.log(path);
