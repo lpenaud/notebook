@@ -9,4 +9,5 @@ pwd
 tar --create \
   --file dist.tar \
   --verbose \
-  index.html
+  index.html \
+  **/*.svg
