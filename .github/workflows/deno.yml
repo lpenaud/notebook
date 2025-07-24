@@ -32,13 +32,13 @@ jobs:
           deno-version: lts
 
       - name: Extract SVG
-        run: deno run --allow-read=./ --allow-write=dist/ script/extract-svg.ts stats/stats.ipynb dist/
+        run: deno run --allow-read=./ --allow-write=dist/ script/extract-svg.ts dist/
 
       - name: Create index
         run: deno run --allow-read=dist/ --allow-write=dist/ script/create-index.ts dist/
 
       - name: Tarball
-        run: script/tarball.sh
+        run: script/tarball.sh dist/
 
       - name: Upload dist
         id: deployment
