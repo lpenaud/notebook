@@ -1,4 +1,7 @@
+#!/usr/bin/env -S deno run --allow-read --allow-write
+
 import * as stdPath from "jsr:@std/path";
+import * as stdFs from "jsr:@std/fs";
 
 interface JupyterNotebookOutput {
   data: {
@@ -14,34 +17,21 @@ interface JupyterNotebook {
   cells: JupyterNotebookCell[];
 }
 
-function getHtmlOutput(ipynb: string) {
-  const notebook: JupyterNotebook = JSON.parse(Deno.readTextFileSync(ipynb));
-  return notebook.cells
-    .values()
-    .flatMap((v) => v.outputs)
-    .map((v) => v.data?.["text/html"])
-    .filter((v) => v !== undefined)
-    .map((v) => v.join(""));
-}
-
-async function main(args: string[]): Promise<number> {
-  if (args.length !== 2) {
-    console.error(
-      "Usage:",
-      import.meta.filename ?? import.meta.url,
-      "IPYNB",
-      "OUTDIR",
-    );
-    return 1;
-  }
+async function getIpynbOutputs(
+  ipynb: string,
+  outdir: string,
+): Promise<Promise<void>[]> {
+  const { cells }: JupyterNotebook = JSON.parse(await Deno.readTextFile(ipynb));
   const anchor = "<svg";
   const endAnchor = "</svg>";
   const svgAttrs = [
     'xmlns="http://www.w3.org/2000/svg"',
     'xmlns:svg="http://www.w3.org/2000/svg"',
   ];
-  const [ipynb, outdir] = args;
-  const content = getHtmlOutput(ipynb)
+  const outputs = cells.flatMap((v) => v.outputs)
+    .map((v) => v.data?.["text/html"])
+    .filter((v) => v !== undefined)
+    .map((v) => v.join(""))
     .flatMap((v) => {
       const start = v.indexOf(anchor);
       if (start === -1) {
@@ -54,15 +44,40 @@ async function main(args: string[]): Promise<number> {
       result += v.slice(start + anchor.length, end + endAnchor.length);
       return [result];
     });
-  const promises: Promise<void>[] = [];
-  let count = 0;
-  for (const svg of content) {
-    count++;
-    const outfile = stdPath.join(outdir, `${count}.svg`);
-    promises.push(Deno.writeTextFile(outfile, svg));
-    console.log(outfile);
+  if (outputs.length > 0) {
+    await Deno.mkdir(outdir, {
+      recursive: true,
+    });
   }
-  await Promise.all(promises);
+  return outputs.map((v, i) => {
+    const outfile = stdPath.resolve(outdir, `${i}.svg`);
+    console.log(outfile);
+    return Deno.writeTextFile(outfile, v);
+  });
+}
+
+async function main(args: string[]): Promise<number> {
+  const outdir = args.pop();
+  if (outdir === undefined) {
+    console.error(
+      "Usage:",
+      import.meta.filename ?? import.meta.url,
+      "[INDIR=.]",
+      "OUTDIR",
+    );
+    return 1;
+  }
+  const indir = args.shift() ?? ".";
+  const walk = stdFs.walk(indir, {
+    exts: [".ipynb"],
+    includeDirs: false,
+    includeFiles: true,
+    includeSymlinks: false,
+  });
+  for await (const { path } of walk) {
+    const out = stdPath.join(outdir, stdPath.basename(stdPath.dirname(path)));
+    await Promise.all(await getIpynbOutputs(path, out));
+  }
   return 0;
 }
 
