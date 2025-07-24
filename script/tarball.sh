@@ -6,6 +6,6 @@ cd "${1:-dist}"
 pwd
 tar --create \
   --gzip \
-  --file dist.tar \
+  --file dist.tar.gz \
   --verbose \
   **/*.{svg,html}
