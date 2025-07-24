@@ -1,27 +1,16 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write
-import * as stdPath from "jsr:@std/path";
-import { getFileTree, removeFileTree } from "./utils/fs.ts";
-import { getDistDir } from "./utils/path.ts";
+import { getDistDir, getFiles, removeFiles } from "./utils/fs.ts";
 
 async function main(args: string[]): Promise<number> {
   const distDir = getDistDir(args);
-  const tree = await getFileTree(distDir, {
-    exts: [".svg", ".html"],
-    includeDirs: false,
-  });
-  const files = tree.entries()
-    .flatMap(([k, v]) => {
-      const paths = v.map((f) => stdPath.format(f));
-      if (k !== distDir) {
-        paths.push(k);
-      }
-      return paths;
-    })
+  const tree = await getFiles(distDir, [".svg", ".html", ".tar"]);
+  const files = tree.values()
+    .flatMap((v) => v)
     .map((p) => `- ${p}`)
     .toArray();
   console.log(files.join("\n"));
   if (confirm("Removed?")) {
-    await removeFileTree(tree);
+    await removeFiles(tree);
   }
   return 0;
 }

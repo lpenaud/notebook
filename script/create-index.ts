@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write
 
 import * as stdPath from "jsr:@std/path";
-import { getFileTree } from "./utils/fs.ts";
+import { getFiles } from "./utils/fs.ts";
 
 function openHtml(title: string) {
   return `<!DOCTYPE html>
@@ -33,24 +33,25 @@ const liAnchor = stdPath.SEPARATOR === "/"
   ? liAnchorPosix
   : liAnchorWindows.bind(undefined, new RegExp(stdPath.SEPARATOR_PATTERN, "g"));
 
+interface WriteIndexOptions {
+  title: string;
+  path: string;
+}
+
 async function writeIndex(
-  outdir: string,
-  title: string,
-  ...files: stdPath.ParsedPath[]
-): Promise<stdPath.ParsedPath> {
-  const path = stdPath.resolve(outdir, "index.html");
-  const parsed = stdPath.parse(path);
+  { title, path }: WriteIndexOptions,
+  ...files: string[]
+): Promise<string> {
   let content = openHtml(title);
   content += files
-    .map((p) => stdPath.format(p))
-    .map((p) => liAnchor(stdPath.relative(parsed.dir, p)))
+    .map((p) => liAnchor(p))
     .join("");
   content += closeHtml();
   console.log(path);
   await Deno.writeTextFile(path, content, {
     createNew: true,
   });
-  return parsed;
+  return path;
 }
 
 async function main(args: string[]): Promise<number> {
@@ -63,18 +64,19 @@ async function main(args: string[]): Promise<number> {
     );
     return 1;
   }
-  const infiles = await getFileTree(stdPath.resolve(distDir), {
-    exts: [".svg"],
-    includeDirs: false,
-    includeFiles: true,
-    includeSymlinks: false,
-  });
+  const infiles = await getFiles(distDir, [".svg"]);
   const tasks = infiles.entries()
-    .map(([outdir, entries]) =>
-      writeIndex(outdir, stdPath.basename(outdir), ...entries)
-    );
+    .map(([title, entries]) => {
+      return writeIndex({
+        path: stdPath.join(distDir, `${title}.index.html`),
+        title,
+      }, ...entries);
+    });
   const indexes = await Promise.all(tasks);
-  await writeIndex(distDir, "index", ...indexes);
+  await writeIndex({
+    path: stdPath.join(distDir, "index.html"),
+    title: "index",
+  }, ...indexes);
   return 0;
 }
 

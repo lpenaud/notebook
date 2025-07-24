@@ -21,6 +21,7 @@ async function getIpynbOutputs(
   ipynb: string,
   outdir: string,
 ): Promise<Promise<void>[]> {
+  const name = stdPath.basename(ipynb, ".ipynb");
   const { cells }: JupyterNotebook = JSON.parse(await Deno.readTextFile(ipynb));
   const anchor = "<svg";
   const endAnchor = "</svg>";
@@ -44,13 +45,8 @@ async function getIpynbOutputs(
       result += v.slice(start + anchor.length, end + endAnchor.length);
       return [result];
     });
-  if (outputs.length > 0) {
-    await Deno.mkdir(outdir, {
-      recursive: true,
-    });
-  }
   return outputs.map((v, i) => {
-    const outfile = stdPath.resolve(outdir, `${i}.svg`);
+    const outfile = stdPath.join(outdir, `${name}.${i}.svg`);
     console.log(outfile);
     return Deno.writeTextFile(outfile, v);
   });
@@ -75,8 +71,7 @@ async function main(args: string[]): Promise<number> {
     includeSymlinks: false,
   });
   for await (const { path } of walk) {
-    const out = stdPath.join(outdir, stdPath.basename(stdPath.dirname(path)));
-    await Promise.all(await getIpynbOutputs(path, out));
+    await Promise.all(await getIpynbOutputs(path, outdir));
   }
   return 0;
 }

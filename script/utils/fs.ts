@@ -1,23 +1,24 @@
 import * as stdPath from "jsr:@std/path";
-import * as stdFs from "jsr:@std/fs";
 
-export type FileTree = Map<string, stdPath.ParsedPath[]>;
+export type FileByTitle = Map<string, string[]>;
 
-export async function getFileTree(
-  indir: string,
-  options?: stdFs.WalkOptions,
-): Promise<FileTree> {
-  const walk = stdFs.walk(indir, options);
-  const map = new Map<string, stdPath.ParsedPath[]>();
-  for await (const { path } of walk) {
-    const relative = stdPath.relative(indir, path);
-    const key = stdPath.resolve(indir, stdPath.dirname(relative));
+export async function getFiles(
+  root: string,
+  exts: string[],
+): Promise<FileByTitle> {
+  const sep = /\./g;
+  const map = new Map<string, string[]>();
+  for await (const { name, isFile } of Deno.readDir(root)) {
+    if (!isFile || !exts.some((e) => name.endsWith(e))) {
+      continue;
+    }
+    const [key] = name.split(sep, 1);
     let values = map.get(key);
     if (values === undefined) {
       values = [];
       map.set(key, values);
     }
-    values.push(stdPath.parse(path));
+    values.push(stdPath.join(root, name));
   }
   return map;
 }
@@ -27,14 +28,20 @@ export function removeVerbose(path: string): Promise<void> {
   return Deno.remove(path);
 }
 
-export async function removeFileTree(tree: FileTree): Promise<void> {
+export async function removeFiles(tree: FileByTitle): Promise<void> {
   await Promise.all(
-    tree.values()
-      .flatMap((v) => v)
-      .map((v) => removeVerbose(stdPath.format(v))),
+    tree.values().flatMap((v) => v).map((v) => removeVerbose(v)),
   );
-  await Promise.all(
-    tree.keys()
-      .map((v) => removeVerbose(v)),
-  );
+}
+
+export function getDistDir(args: string[]) {
+  let distDir = args.shift();
+  if (distDir !== undefined) {
+    return distDir;
+  }
+  distDir = import.meta.dirname;
+  if (distDir !== undefined) {
+    return stdPath.resolve(distDir, "../dist");
+  }
+  return stdPath.resolve(Deno.cwd(), "dist");
 }
