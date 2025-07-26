@@ -22,6 +22,7 @@ export function fromReadable(
     .pipeThrough(
       new CsvParseStream({
         separator: ";",
+        skipFirstRow: true,
         columns: [
           "date",
           "downloadedBytes",
